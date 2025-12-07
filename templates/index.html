@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bir Sorum Var! 👀</title>
+    <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .gif-container img {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            color: #fff;
+            font-family: 'Indie Flower', cursive;
+            font-size: 2.8rem;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Butonları yan yana tutan kutu */
+        .button-group {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px; /* Başlangıçta aralarındaki boşluk */
+            width: 100%;
+        }
+
+        button {
+            padding: 15px 35px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            white-space: nowrap; /* Yazı asla alt satıra geçmesin */
+        }
+
+        #yes-btn {
+            background-color: #00b894;
+            color: white;
+            z-index: 100;
+        }
+
+        #yes-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 184, 148, 0.6);
+        }
+
+        #no-btn {
+            background-color: #d63031;
+            color: white;
+            /* ÖNEMLİ: Başlangıçta 'static' veya 'relative' bırakıyoruz ki flexbox içinde dursun */
+            position: relative; 
+        }
+
+        #final-message {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 600px;
+            z-index: 999;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="main-content">
+        <div class="gif-container">
+            <img id="mascot-gif" src="https://media.giphy.com/media/CjmvTCZf2U3p09Cn0h/giphy.gif" alt="Cute GIF">
+        </div>
+
+        <h1 id="question-text">Yeni projeme ortak olur musun? 🚀</h1>
+
+        <div class="button-group">
+            <button id="yes-btn" onclick="acceptProposal()">EVET! 😍</button>
+            <button id="no-btn" onmouseover="rejectProposal()" onclick="rejectProposal()">Hayır... 😒</button>
+        </div>
+    </div>
+
+    <div id="final-message">
+        <div class="gif-container">
+            <img src="https://media.giphy.com/media/TdfyKrN7HGTIY/giphy.gif" alt="Party Time">
+        </div>
+        <h2 style="color:#00b894; margin-top:20px;">HARİKA SEÇİM! 🥳</h2>
+        <p style="color:#555; font-size:1.2rem;">Biliyordum! Bu takım dünyayı sallar. 🦁<br>Detayları konuşmak için hemen yaz!</p>
+    </div>
+
+    <script>
+        const yesBtn = document.getElementById('yes-btn');
+        const noBtn = document.getElementById('no-btn');
+        const mascotGif = document.getElementById('mascot-gif');
+        const mainContent = document.getElementById('main-content');
+        const finalMessage = document.getElementById('final-message');
+
+        // Sürekli dönecek olan laf sokma listesi
+        const noTexts = [
+            "Emin misin?", 
+            "Bir daha düşün?", 
+            "Bence pişman olursun", 
+            "Kalbimi kırıyorsun 💔", 
+            "Bunu yapma!", 
+            "Hata ediyorsun...", 
+            "O düğme bozuk!", 
+            "Polisi ararım bak!",
+            "Ayıp oluyor...",
+            "Vazgeç bu sevdadan",
+            "Sadece EVET var!"
+        ];
+
+        // Üzgün GIF listesi
+        const sadGifs = [
+            "https://media.giphy.com/media/OPU6wzx8JrHna/giphy.gif", // Ağlayan kedi
+            "https://media.giphy.com/media/d2lcHJTG5Tscg/giphy.gif", // Ağlayan adam
+            "https://media.giphy.com/media/L95W4wv8nnb9K/giphy.gif", // Üzgün pikachu
+            "https://media.giphy.com/media/26ufcVAp3AiJJsrIs/giphy.gif" // Hüsran
+        ];
+
+        let clickCount = 0;
+        let scaleSize = 1;
+
+        // Hem tıklayınca hem de üzerine gelince kaçsın (onmouseover + onclick)
+        function rejectProposal() {
+            clickCount++;
+
+            // 1. Evet butonunu her seferinde biraz büyüt
+            scaleSize += 0.2; 
+            yesBtn.style.transform = `scale(${scaleSize})`;
+
+            // 2. Hayır butonunu ARTIK özgürleştir (Fixed moda geçir)
+            // Bu satır sayesinde buton ilk başta yerindeyken, artık serbest kalır.
+            noBtn.style.position = 'fixed'; 
+
+            // 3. Rastgele konum hesapla
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Butonun ekran dışına taşmaması için padding
+            const btnWidth = noBtn.offsetWidth;
+            const btnHeight = noBtn.offsetHeight;
+            
+            const randomX = Math.random() * (viewportWidth - btnWidth - 50) + 25; 
+            const randomY = Math.random() * (viewportHeight - btnHeight - 50) + 25;
+
+            noBtn.style.left = randomX + "px";
+            noBtn.style.top = randomY + "px";
+
+            // 4. Butonu biraz döndür (kafa karışıklığı)
+            const randomDeg = Math.random() * 60 - 30; // -30 ile +30 derece arası
+            noBtn.style.transform = `rotate(${randomDeg}deg)`;
+
+            // 5. Metni değiştir (SONSUZ DÖNGÜ İÇİN MODULO KULLANIMI)
+            // clickCount arttıkça listenin başına döner (0, 1, 2... 10, 0, 1...)
+            const textIndex = clickCount % noTexts.length;
+            noBtn.innerText = noTexts[textIndex];
+
+            // 6. GIF'i değiştir
+            const gifIndex = clickCount % sadGifs.length;
+            mascotGif.src = sadGifs[gifIndex];
+
+            // 7. Evet butonu çok büyürse final vuruşu yap
+            if (scaleSize > 6) {
+                yesBtn.style.position = "fixed";
+                yesBtn.style.top = "0";
+                yesBtn.style.left = "0";
+                yesBtn.style.width = "100vw";
+                yesBtn.style.height = "100vh";
+                yesBtn.style.borderRadius = "0";
+                yesBtn.style.fontSize = "4rem";
+                yesBtn.innerText = "EVET ARTIK KAÇAMAZSIN! 😂";
+                yesBtn.style.zIndex = "1000";
+                
+                // Hayır butonu artık kaybolsun
+                noBtn.style.display = "none"; 
+            }
+        }
+
+        function acceptProposal() {
+            // Konfeti efekti
+            var duration = 3 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                var particleCount = 50 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
+            }, 250);
+
+            // Ekranı temizle ve mesajı göster
+            mainContent.classList.add('hidden');
+            finalMessage.style.display = "block";
+        }
+    </script>
+</body>
+</html>
